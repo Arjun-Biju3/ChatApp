@@ -50,10 +50,29 @@ export const sendMessage = async(req,res)=>{
 
         await newMessage.save()
 
+        const sender = await User.findById(senderId);
+        const receiver = await User.findById(receiverId);
+
+        if (!sender.interactedWith.includes(receiverId)) {
+            sender.interactedWith.push(receiverId);
+            await sender.save(); 
+        }
+
+        if (!receiver.interactedWith.includes(senderId)) {
+            receiver.interactedWith.push(senderId);
+            await receiver.save(); 
+        }
+
         //socket.io
         const recieverSocketId = getRecieverSocketId(receiverId);
         if(recieverSocketId){
             io.to(recieverSocketId).emit("newMessage",newMessage)
+            io.to(recieverSocketId).emit("newInteraction", {
+                _id: sender._id,
+                fullName: sender.fullName,
+                email: sender.email,
+                profilePic: sender.profilePic
+            });
         }
         res.status(201).json(newMessage)
     } catch (error) {

@@ -20,7 +20,12 @@ const userSchema = new Schema({
     profilePic:{
         type: String,
         default:"",
-    }
+    },
+    interactedWith: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+}]
+
 },{timestamps:true})
 
 const User = mongoose.model("User",userSchema);

@@ -35,7 +35,8 @@ export const signup = async (req,res)=>{
                 _id:newUser._id,
                 fullName: newUser.fullName,
                 email: newUser.email,
-                profilePic: newUser.profilePic
+                profilePic: newUser.profilePic,
+                interactedWith:newUser.interactedWith
             });
          }
          else{
@@ -53,7 +54,7 @@ export const login = async (req,res)=>{
         if (!email || !password){
             return res.status(400).json({message:"Fields must not be empty"})
         }
-        const user = await User.findOne({email})
+        const user = await User.findOne({email}).populate('interactedWith','-password -__v')
         if(!user){
             return res.status(400).json({message:"Invalid Credentials"})
         }
@@ -66,7 +67,8 @@ export const login = async (req,res)=>{
              _id:user._id,
             fullName: user.fullName,
             email: user.email,
-            profilePic: user.profilePic
+            profilePic: user.profilePic,
+            interactedWith:user.interactedWith
         })
     } catch (error) {
         console.log("Error in Login Controller",error.message);
@@ -100,11 +102,19 @@ export const updateProfile = async (req,res)=>{
     }
 }
 
-export const checkAuth = async(req,res)=>{
-    try {
-        res.status(200).json(req.user);
-    } catch (error) {
-        console.log("Error in checkAuth Controller",error.message);
-        res.status(500).json({message:"Internal Server Error"}); 
+export const checkAuth = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select("-password")
+      .populate("interactedWith",'-password -__v');
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-}
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.log("Error in checkAuth Controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

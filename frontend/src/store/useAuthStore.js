@@ -13,12 +13,15 @@ export const useAuthStore = create((set,get)=>({
     isUpdatingProfile: false,
     isCheckingAuth:true,
     onlineUsers: [],
+    interactedUsers:[],
     socket:null,
 
     checkAuth: async()=>{
         try {
             const response = await axiosInstance.get("/auth/check");
+            console.log("testttt",response.data);
             set({authUser:response.data})
+            set({interactedUsers:response.data.interactedWith})
             get().connectSocket()
             console.log(response);
         } catch (error) {
@@ -34,6 +37,7 @@ export const useAuthStore = create((set,get)=>({
         try {
             const response = await axiosInstance.post("/auth/signup",data);
             set({authUser:response.data})
+            set({interactedUsers:response.data.interactedWith})
             toast.success("Account created successfully")
             get().connectSocket()
         } catch (error) {
@@ -47,8 +51,8 @@ export const useAuthStore = create((set,get)=>({
         set({ isLoggingIn: true });
         try {
         const res = await axiosInstance.post("/auth/login", data);
-        console.log(res);
         set({ authUser: res.data });
+        set({interactedUsers:response.data.interactedWith})
         toast.success("Logged in successfully");
         get().connectSocket()
         } catch (error) {
@@ -95,9 +99,23 @@ export const useAuthStore = create((set,get)=>({
         set({socket:socket})
         socket.on("getOnlineUsers", (userIds)=>{
             set({onlineUsers:userIds})
-        })
+        });
+        socket.on("newInteraction", (newUser) => {
+        const current = get().interactedUsers;
+        const exists = current.some(u => u._id === newUser._id);
+        if (!exists) {
+            set({ interactedUsers: [newUser,...current] });
+        }
+    });
     },
     disconnectSocket:()=>{
         if(get().socket?.connected) get().socket.disconnect()
+    },
+    setInteractedUsers: (user) => {
+    const currentUsers = get().interactedUsers;
+    const alreadyExists = currentUsers.some(u => u._id === user._id);
+    if (!alreadyExists) {
+        set({ interactedUsers: [user,...currentUsers] });
     }
+}
 }));
